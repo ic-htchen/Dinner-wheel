@@ -91,6 +91,8 @@ button{font:inherit;cursor:pointer}
 form{display:grid;gap:12px}
 .field{display:grid;gap:6px}
 .field label{font-size:13px;color:var(--muted);font-weight:500}
+textarea{font:inherit;width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px 12px;resize:vertical}
+textarea:focus-visible{outline:3px solid var(--yolk);outline-offset:2px}
 input[type=text]{font:inherit;width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px 12px}
 .row2{display:grid;gap:12px;grid-template-columns:1fr}
 @media(min-width:520px){.row2{grid-template-columns:1fr 1fr}}
@@ -217,21 +219,23 @@ input[type=text]{font:inherit;width:100%;box-sizing:border-box;border:1.5px soli
           <button class="btn ghost" type="button" id="clearExamples">清除所有範例</button>
         </div>
       </section>
+
+      <section class="panel">
+        <h2>匯入／匯出名單</h2>
+        <p class="hint" style="margin:0 0 10px">一行一家，格式是「名稱 | 地區 | 類型1, 類型2」。地區和類型可以留空，名單裡已經有的名稱會自動跳過。</p>
+        <textarea id="ioText" rows="6" aria-label="匯入或匯出的名單文字" placeholder="永安擔擔麵 | 永和區 | 麵, 紅燒肉&#10;小高拉麵 | 永和區 | 麵"></textarea>
+        <div class="actions" style="justify-content:flex-start;margin-top:10px">
+          <button class="btn chili" type="button" id="importBtn">匯入</button>
+          <button class="btn ghost" type="button" id="exportBtn">匯出目前名單</button>
+          <span class="form-msg" id="ioMsg" style="color:var(--leaf)"></span>
+        </div>
+      </section>
     </div>
   </div>
 </div>
 
-<script>
-/* ===== 把 Firebase 給你的設定貼在這裡（教學第 4 步）===== */
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCsDnXSK1Rk25hm1eTBhQeIcAAOlgFFx9g",
-  authDomain: "dinner-wheel-41698.firebaseapp.com",
-  projectId: "dinner-wheel-41698",
-  storageBucket: "dinner-wheel-41698.firebasestorage.app",
-  messagingSenderId: "753632401308",
-  appId: "1:753632401308:web:6ea98ea3abf826909fda59"
-};
-</script>
+<!-- Firebase 設定放在 firebase-config.js，更新 index.html 時不會被覆蓋 -->
+<script src="firebase-config.js"></script>
 
 <script>
 (function(){
@@ -615,6 +619,32 @@ window.FIREBASE_CONFIG = {
   const mq = matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener?.('change', ()=>drawWheel(currentPool));
   new MutationObserver(()=>drawWheel(currentPool)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   document.fonts?.ready?.then(()=>drawWheel(currentPool));
+
+  /* ---------- import / export ---------- */
+  $('#importBtn').addEventListener('click', async ()=>{
+    const msg=$('#ioMsg');
+    if(!canWrite || !backend){ msg.textContent='先登入才能匯入'; return; }
+    const lines=$('#ioText').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(!lines.length){ msg.textContent='先貼上要匯入的名單'; return; }
+    const have=new Set(dishes.map(d=>d.name)); let added=0, skipped=0;
+    $('#importBtn').disabled=true;
+    for(const line of lines){
+      const [name='', area='', types='']=line.split(/[|｜]/).map(x=>x.trim());
+      if(!name || have.has(name)){ skipped++; continue; }
+      await backend.add({id:uid(), name:name.slice(0,40), area:area.slice(0,20), types:splitTypes(types)});
+      have.add(name); added++;
+    }
+    $('#importBtn').disabled=false;
+    msg.textContent=`加入 ${added} 家`+(skipped?`，跳過 ${skipped} 家（重複或沒有名稱）`:'');
+    if(added) $('#ioText').value='';
+  });
+  $('#exportBtn').addEventListener('click', ()=>{
+    const ta=$('#ioText');
+    ta.value=dishes.map(d=>[d.name, d.area||'', (d.types||[]).join(', ')].join(' | ')).join('\n');
+    const done=()=>{ $('#ioMsg').textContent=`已複製 ${dishes.length} 家，可以貼到 LINE 或記事本備份`; };
+    try{ navigator.clipboard.writeText(ta.value).then(done, ()=>{ ta.select(); $('#ioMsg').textContent='已選取文字，按 Cmd+C 複製'; }); }
+    catch(e){ ta.select(); $('#ioMsg').textContent='已選取文字，按 Cmd+C 複製'; }
+  });
 
   init();
 })();
