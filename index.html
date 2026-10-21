@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>今晚吃什麼轉盤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column on phones; wheel + result left, filters/list right on wide screens. Night-market lantern palette. */
+:root{
+  --bg:#eef2ef;
+  --surface:#ffffff;
+  --ink:#1d2e2b;
+  --muted:#5f6f6b;
+  --line:#d3dcd8;
+  --chili:#d9472b;
+  --yolk:#f2b632;
+  --leaf:#2f7d6b;
+  --plum:#7a4b8c;
+  --chip:#e2e9e6;
+  --onaccent:#ffffff;
+  --display:"LXGW WenKai TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",serif;
+  --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141c1b;--surface:#1d2827;--ink:#e8efec;--muted:#9aaba6;--line:#2e3c3a;
+  --chili:#ef6a4c;--yolk:#f4c457;--leaf:#4fa892;--plum:#a87bbb;--chip:#26332f;--onaccent:#141c1b;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141c1b;--surface:#1d2827;--ink:#e8efec;--muted:#9aaba6;--line:#2e3c3a;
+  --chili:#ef6a4c;--yolk:#f4c457;--leaf:#4fa892;--plum:#a87bbb;--chip:#26332f;--onaccent:#141c1b;color-scheme:dark}
+
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1080px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,40px);margin:0;letter-spacing:.02em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--chili)}
+.sub{color:var(--muted);margin:0}
+.store-note{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.who .btn{padding:7px 14px;font-size:14px}
+.grid{display:grid;gap:24px;grid-template-columns:1fr}
+@media(min-width:880px){.grid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:start}}
+.col{display:grid;gap:20px;min-width:0}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px}
+h2{font-family:var(--display);font-size:20px;margin:0 0 12px;font-weight:700}
+.label{font-size:12px;letter-spacing:.12em;color:var(--muted);margin:0 0 8px;font-weight:500}
+
+/* wheel */
+.stage{display:grid;justify-items:center;gap:16px}
+.wheel-box{position:relative;width:min(100%,420px);aspect-ratio:1;max-width:100%}
+canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--chili);filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));z-index:2}
+.hub{position:absolute;inset:0;margin:auto;width:22%;height:22%;border-radius:50%;background:var(--surface);border:3px solid var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:clamp(14px,3.6vw,20px);color:var(--ink);cursor:pointer;z-index:2}
+.hub:disabled{cursor:default;opacity:.85}
+.empty-wheel{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:20%;font-size:14px}
+
+.result{width:100%;text-align:center;display:grid;gap:10px;min-height:118px;align-content:center;border:2px dashed var(--line);border-radius:14px;padding:14px}
+.result .k{font-size:13px;color:var(--muted);letter-spacing:.1em}
+.result .v{font-family:var(--display);font-size:clamp(30px,8vw,44px);font-weight:700;line-height:1.15;color:var(--chili);overflow-wrap:anywhere}
+.result .meta{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+
+button{font:inherit;cursor:pointer}
+.btn{border:0;border-radius:999px;padding:10px 18px;font-weight:700;background:var(--ink);color:var(--bg)}
+.btn.chili{background:var(--chili);color:var(--onaccent)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.chip:focus-visible,.hub:focus-visible,input:focus-visible,.x:focus-visible{outline:3px solid var(--yolk);outline-offset:2px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid transparent;background:var(--chip);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.chip.area[aria-pressed="true"]{background:var(--leaf);color:var(--onaccent)}
+.chip.type[aria-pressed="true"]{background:var(--plum);color:var(--onaccent)}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:1px 8px;background:var(--chip);color:var(--muted)}
+.tag.area{color:var(--leaf);font-weight:500}
+.tag.type{color:var(--plum);font-weight:500}
+.tag.ex{background:transparent;border:1px dashed var(--line)}
+.filter-group{display:grid;gap:8px}
+.filters{display:grid;gap:16px}
+.count{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.toggle{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink)}
+.toggle input{width:18px;height:18px;accent-color:var(--chili)}
+
+/* form */
+form{display:grid;gap:12px}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;color:var(--muted);font-weight:500}
+input[type=text]{font:inherit;width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:9px 12px}
+.row2{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:520px){.row2{grid-template-columns:1fr 1fr}}
+.hint{font-size:12px;color:var(--muted)}
+.suggest{display:flex;flex-wrap:wrap;gap:6px}
+.suggest .chip{font-size:12px;padding:3px 10px}
+.form-msg{font-size:13px;min-height:1.2em;color:var(--chili)}
+
+/* list */
+.list{list-style:none;margin:0;padding:0;display:grid}
+.list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);min-width:0}
+.list li:first-child{border-top:0}
+.list .name{font-weight:500;overflow-wrap:anywhere}
+.list .info{flex:1;min-width:0;display:grid;gap:4px}
+.list .tags{display:flex;flex-wrap:wrap;gap:4px}
+.x{border:0;background:transparent;color:var(--muted);border-radius:8px;padding:6px 8px;font-size:13px}
+.x:hover{color:var(--chili)}
+.confirm{display:flex;gap:6px;align-items:center;font-size:13px;flex-shrink:0}
+.confirm .yes{background:var(--chili);color:var(--onaccent);border:0;border-radius:8px;padding:5px 10px}
+.list-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.search{margin-bottom:6px}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.history{display:flex;flex-wrap:wrap;gap:6px}
+[hidden]{display:none!important}
+.edit{flex:1;min-width:0;display:grid;gap:8px;padding:4px 0}
+.edit .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.edit .btn{padding:7px 14px;font-size:14px}
+.notice{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--chip);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:14px}
+.history .tag{font-size:13px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>今晚<em>吃什麼</em>轉盤</h1>
+      <p class="sub">把你們愛吃的存起來，選地區或類型，轉一下就決定。</p>
+    </div>
+    <div class="who">
+      <span class="store-note" id="storeNote">載入中…</span>
+      <button class="btn ghost" type="button" id="authBtn" hidden>用 Google 登入</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel stage" aria-label="轉盤">
+        <div class="wheel-box">
+          <div class="pointer" aria-hidden="true"></div>
+          <canvas id="wheel" width="840" height="840" aria-hidden="true"></canvas>
+          <button class="hub" id="hub" type="button" aria-label="轉轉盤">轉！</button>
+          <div class="empty-wheel" id="emptyWheel" hidden></div>
+        </div>
+        <div class="result" id="result" aria-live="polite">
+          <div class="k">按中間的「轉！」開始抽</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>最近決定吃的</h2>
+        <div class="history" id="history"><span class="empty">還沒有紀錄。抽到後按「就吃這個」會記在這裡。</span></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel filters" aria-label="篩選">
+        <div class="list-head">
+          <h2 style="margin:0">這次從哪些裡面抽？</h2>
+          <span class="count" id="poolCount"></span>
+        </div>
+        <div class="filter-group">
+          <p class="label">地區</p>
+          <div class="chips" id="areaChips"></div>
+        </div>
+        <div class="filter-group">
+          <p class="label">類型</p>
+          <div class="chips" id="typeChips"></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="avoidRecent"> 避開最近 3 次吃過的</label>
+        <p class="hint" style="margin:0">都不選就是全部一起抽。同一組可以多選，地區和類型會同時套用。</p>
+      </section>
+
+      <section class="panel">
+        <h2>新增一個晚餐選項</h2>
+        <form id="addForm" autocomplete="off">
+          <div class="field">
+            <label for="fName">吃什麼（店名或料理）</label>
+            <input type="text" id="fName" maxlength="40" placeholder="例如：巷口牛肉麵" required>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="fArea">地區</label>
+              <input type="text" id="fArea" maxlength="20" placeholder="例如：公館">
+              <div class="suggest" id="areaSuggest"></div>
+            </div>
+            <div class="field">
+              <label for="fTypes">類型（可多個，用逗號分開）</label>
+              <input type="text" id="fTypes" maxlength="60" placeholder="例如：麵, 台式">
+              <div class="suggest" id="typeSuggest"></div>
+            </div>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn chili" type="submit" id="addBtn">加入轉盤</button>
+            <span class="form-msg" id="formMsg"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="list-head">
+          <h2>我們的口袋名單</h2>
+          <span class="count" id="listCount"></span>
+        </div>
+        <div class="notice" id="migrateBar" hidden>
+          <span id="migrateText"></span>
+          <button class="btn chili" type="button" id="migrateBtn">搬到共用名單</button>
+        </div>
+        <input type="text" id="search" class="search" placeholder="搜尋名稱或標籤" aria-label="搜尋名單">
+        <ul class="list" id="list"></ul>
+        <div class="actions" id="exampleBar" hidden style="justify-content:flex-start;margin-top:10px">
+          <button class="btn ghost" type="button" id="clearExamples">清除所有範例</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 把 Firebase 給你的設定貼在這裡（教學第 4 步）===== */
+window.FIREBASE_CONFIG = {
+  apiKey: "貼上你的 apiKey",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+</script>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  let dishes = [];      // {id,name,area,types[],example}
+  let history = [];     // [{id,name,at}]
+  let selArea = new Set(), selType = new Set();
+  let backend = null;   // {add, remove, setHistory}
+  let canWrite = true;
+  let rotation = 0, spinning = false, lastPick = null, pendingDelete = null;
+  let editing = null, editDraft = null, editMsg = '';
+
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const splitTypes = s => [...new Set(s.split(/[,，、\/\s]+/).map(t=>t.trim()).filter(Boolean))].slice(0,6);
+  const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  /* ---------- storage ---------- */
+  const LS_KEY = 'dinnerwheel.local.v1';
+  function lsLoad(){ try{ const o = JSON.parse(localStorage.getItem(LS_KEY)||'{}'); return o; }catch(e){ return {}; } }
+  function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({dishes, history})); }catch(e){} }
+
+  function useLocal(){
+    const o = lsLoad();
+    dishes = Array.isArray(o.dishes) ? o.dishes : [];
+    history = Array.isArray(o.history) ? o.history : [];
+    $('#storeNote').textContent = '目前只存在這台裝置';
+    backend = {
+      add: async d => { dishes.push(d); lsSave(); renderAll(); },
+      update: async (id, f) => { dishes = dishes.map(x=> x.id===id ? {...x, ...f} : x); lsSave(); renderAll(); },
+      remove: async id => { dishes = dishes.filter(x=>x.id!==id); lsSave(); renderAll(); },
+      setHistory: async h => { history = h; lsSave(); renderHistory(); renderPool(); }
+    };
+    renderAll();
+  }
+
+  function offerMigration(){
+    // dishes saved on this device before signing in can be moved into the shared list
+    const localOnly = (lsLoad().dishes || []).filter(d => d && d.name);
+    if(!canWrite || !localOnly.length){ $('#migrateBar').hidden = true; return; }
+    $('#migrateText').textContent = `這台裝置上有 ${localOnly.length} 個還沒同步的選項`;
+    $('#migrateBar').hidden = false;
+    $('#migrateBtn').disabled = false;
+    $('#migrateBtn').onclick = async () => {
+      if(!backend) return;
+      $('#migrateBtn').disabled = true;
+      const have = new Set(dishes.map(d=>d.name));
+      for(const d of localOnly){ if(!have.has(d.name)){ await backend.add({id:uid(), name:d.name, area:d.area||'', types:d.types||[]}); have.add(d.name); } }
+      try{ localStorage.setItem(LS_KEY, JSON.stringify({dishes:[], history:[]})); }catch(e){}
+      $('#migrateBar').hidden = true;
+    };
+  }
+
+  async function init(){
+    renderAll();
+    const cfg = window.FIREBASE_CONFIG;
+    if(!cfg || !cfg.apiKey || cfg.apiKey.startsWith('貼上')){
+      useLocal();
+      $('#storeNote').textContent = '還沒設定 Firebase，目前只存在這台裝置';
+      return;
+    }
+    let appM, authM, fsM;
+    try{
+      const base = 'https://www.gstatic.com/firebasejs/10.12.2/';
+      [appM, authM, fsM] = await Promise.all([
+        import(base + 'firebase-app.js'),
+        import(base + 'firebase-auth.js'),
+        import(base + 'firebase-firestore.js')
+      ]);
+    }catch(e){
+      useLocal();
+      $('#storeNote').textContent = '連不上 Firebase，目前只存在這台裝置';
+      return;
+    }
+    const { initializeApp } = appM;
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } = authM;
+    const { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } = fsM;
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const fdb = getFirestore(app);
+    const authBtn = $('#authBtn');
+    authBtn.hidden = false;
+    let unsubs = [];
+    const setWritable = ok => { canWrite = ok; $('#addBtn').disabled = !ok; };
+
+    onAuthStateChanged(auth, user => {
+      unsubs.forEach(u => u()); unsubs = [];
+      if(!user){
+        dishes = []; history = []; backend = null; setWritable(false);
+        $('#storeNote').textContent = '先登入才看得到你們的名單';
+        $('#formMsg').textContent = '登入後就能新增';
+        $('#migrateBar').hidden = true;
+        authBtn.textContent = '用 Google 登入';
+        authBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider())
+          .catch(err => { $('#storeNote').textContent = '登入沒有成功（' + (err.code || '未知原因') + '）'; });
+        renderAll();
+        return;
+      }
+      authBtn.textContent = '登出';
+      authBtn.onclick = () => signOut(auth);
+      $('#storeNote').textContent = '已登入：' + user.email;
+      $('#formMsg').textContent = '';
+      setWritable(true);
+
+      const col = collection(fdb, 'dishes');
+      const hRef = doc(fdb, 'meta', 'history');
+      const denied = () => {
+        setWritable(false); dishes = []; history = []; renderAll();
+        $('#storeNote').textContent = user.email + ' 沒有權限，請確認 Firebase 規則裡有這個信箱';
+      };
+      unsubs.push(onSnapshot(col, snap => {
+        dishes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+        renderAll();
+      }, err => {
+        if(err && err.code === 'permission-denied') denied();
+        else $('#storeNote').textContent = '暫時連不上共享名單';
+      }));
+      unsubs.push(onSnapshot(hRef, s => {
+        const h = s.exists() ? s.data().picks : [];
+        history = Array.isArray(h) ? h : [];
+        renderHistory(); renderPool();
+      }, () => {}));
+
+      const guard = async fn => {
+        try{ await fn(); }
+        catch(e){
+          if(e && e.code === 'permission-denied') denied();
+          else $('#formMsg').textContent = '沒存到，請再試一次';
+        }
+      };
+      backend = {
+        add: d => guard(() => setDoc(doc(col, d.id), { name:d.name, area:d.area, types:d.types, createdAt:Date.now() })),
+        update: (id, f) => guard(() => updateDoc(doc(col, id), f)),
+        remove: id => guard(() => deleteDoc(doc(col, id))),
+        setHistory: h => guard(() => setDoc(hRef, { picks: h }))
+      };
+      offerMigration();
+    });
+  }
+
+  /* ---------- derived ---------- */
+  const allAreas = () => [...new Set(dishes.map(d=>d.area).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  const allTypes = () => [...new Set(dishes.flatMap(d=>d.types||[]))].sort((a,b)=>a.localeCompare(b,'zh-Hant'));
+  function pool(){
+    const recent = $('#avoidRecent').checked ? new Set(history.slice(0,3).map(h=>h.id)) : new Set();
+    let p = dishes.filter(d =>
+      (!selArea.size || selArea.has(d.area)) &&
+      (!selType.size || (d.types||[]).some(t=>selType.has(t))) );
+    const trimmed = p.filter(d=>!recent.has(d.id));
+    return trimmed.length ? trimmed : p;
+  }
+
+  /* ---------- render ---------- */
+  function chipBtn(text, cls, pressed, onClick){
+    const b = document.createElement('button');
+    b.type='button'; b.className='chip '+cls; b.textContent=text;
+    b.setAttribute('aria-pressed', pressed?'true':'false');
+    b.addEventListener('click', onClick); return b;
+  }
+  function renderFilters(){
+    const areas = allAreas(), types = allTypes();
+    [...selArea].forEach(a=>{ if(!areas.includes(a)) selArea.delete(a); });
+    [...selType].forEach(t=>{ if(!types.includes(t)) selType.delete(t); });
+    const ac = $('#areaChips'); ac.replaceChildren(
+      chipBtn('全部', '', !selArea.size, ()=>{ selArea.clear(); renderFilters(); renderPool(); }),
+      ...areas.map(a=>chipBtn(a,'area',selArea.has(a),()=>{ selArea.has(a)?selArea.delete(a):selArea.add(a); renderFilters(); renderPool(); })));
+    const tc = $('#typeChips'); tc.replaceChildren(
+      chipBtn('全部', '', !selType.size, ()=>{ selType.clear(); renderFilters(); renderPool(); }),
+      ...types.map(t=>chipBtn(t,'type',selType.has(t),()=>{ selType.has(t)?selType.delete(t):selType.add(t); renderFilters(); renderPool(); })));
+    // form suggestions
+    $('#areaSuggest').replaceChildren(...areas.slice(0,12).map(a=>chipBtn(a,'area',false,()=>{ $('#fArea').value=a; })));
+    $('#typeSuggest').replaceChildren(...types.slice(0,14).map(t=>chipBtn(t,'type',false,()=>{
+      const cur = splitTypes($('#fTypes').value); if(!cur.includes(t)) cur.push(t); $('#fTypes').value = cur.join(', ');
+    })));
+  }
+  function tagEl(text, cls){ const s=document.createElement('span'); s.className='tag '+cls; s.textContent=text; return s; }
+
+  function renderList(){
+    const q = $('#search').value.trim().toLowerCase();
+    const items = dishes.filter(d => !q || [d.name,d.area,...(d.types||[])].join(' ').toLowerCase().includes(q)).slice().reverse();
+    $('#listCount').textContent = dishes.length + ' 個';
+    const ul = $('#list'); ul.replaceChildren();
+    if(!dishes.length){ const li=document.createElement('li'); li.className='empty'; li.textContent='名單是空的。用上面的表單加入第一家，例如你們上次很愛的那間。'; ul.append(li); }
+    else if(!items.length){ const li=document.createElement('li'); li.className='empty'; li.textContent='找不到符合的項目'; ul.append(li); }
+    items.forEach(d=>{
+      const li=document.createElement('li');
+      if(canWrite && editing===d.id){ li.append(editForm(d)); ul.append(li); return; }
+      const info=document.createElement('div'); info.className='info';
+      const n=document.createElement('span'); n.className='name'; n.textContent=d.name;
+      const tags=document.createElement('div'); tags.className='tags';
+      if(d.example) tags.append(tagEl('範例','ex'));
+      if(d.area) tags.append(tagEl(d.area,'area'));
+      (d.types||[]).forEach(t=>tags.append(tagEl(t,'type')));
+      info.append(n,tags); li.append(info);
+      if(canWrite){
+        if(pendingDelete===d.id){
+          const c=document.createElement('div'); c.className='confirm';
+          const y=document.createElement('button'); y.className='yes'; y.type='button'; y.textContent='刪除';
+          y.onclick=()=>{ pendingDelete=null; backend && backend.remove(d.id); };
+          const no=document.createElement('button'); no.className='x'; no.type='button'; no.textContent='取消';
+          no.onclick=()=>{ pendingDelete=null; renderList(); };
+          c.append(y,no); li.append(c);
+        } else {
+          const x=document.createElement('button'); x.className='x'; x.type='button'; x.textContent='刪除';
+          x.setAttribute('aria-label','刪除 '+d.name);
+          x.onclick=()=>{ pendingDelete=d.id; renderList(); };
+          const e=document.createElement('button'); e.className='x'; e.type='button'; e.textContent='編輯';
+          e.setAttribute('aria-label','編輯 '+d.name);
+          e.onclick=()=>{ editing=d.id; pendingDelete=null; editMsg='';
+            editDraft={name:d.name, area:d.area||'', types:(d.types||[]).join(', ')}; renderList();
+            document.getElementById('eName')?.focus(); };
+          li.append(e, x);
+        }
+      }
+      ul.append(li);
+    });
+    $('#exampleBar').hidden = !(canWrite && dishes.some(d=>d.example));
+  }
+
+  function editForm(d){
+    const f=document.createElement('form'); f.className='edit';
+    const mk=(id,label,key,max)=>{ const w=document.createElement('div'); w.className='field';
+      const l=document.createElement('label'); l.htmlFor=id; l.textContent=label;
+      const i=document.createElement('input'); i.type='text'; i.id=id; i.maxLength=max; i.value=editDraft[key];
+      i.addEventListener('input',()=>{ editDraft[key]=i.value; });
+      w.append(l,i); return w; };
+    const row=document.createElement('div'); row.className='row2';
+    row.append(mk('eArea','地區','area',20), mk('eTypes','類型（逗號分開）','types',60));
+    const btns=document.createElement('div'); btns.className='btns';
+    const save=document.createElement('button'); save.type='submit'; save.className='btn chili'; save.textContent='儲存';
+    const cancel=document.createElement('button'); cancel.type='button'; cancel.className='btn ghost'; cancel.textContent='取消';
+    cancel.onclick=()=>{ editing=null; editDraft=null; renderList(); };
+    const msg=document.createElement('span'); msg.className='form-msg'; msg.textContent=editMsg;
+    btns.append(save,cancel,msg);
+    f.append(mk('eName','名稱','name',40), row, btns);
+    f.addEventListener('submit', async ev=>{
+      ev.preventDefault();
+      const name=editDraft.name.trim();
+      if(!name){ editMsg='名稱不能空白'; renderList(); return; }
+      if(dishes.some(x=>x.id!==d.id && x.name===name)){ editMsg='名單裡已經有「'+name+'」了'; renderList(); return; }
+      const fields={name, area:editDraft.area.trim(), types:splitTypes(editDraft.types)};
+      editing=null; editDraft=null; editMsg='';
+      await backend.update(d.id, fields);
+      renderAll();
+    });
+    return f;
+  }
+
+  function renderHistory(){
+    const h=$('#history'); h.replaceChildren();
+    if(!history.length){ const s=document.createElement('span'); s.className='empty'; s.textContent='還沒有紀錄。抽到後按「就吃這個」會記在這裡。'; h.append(s); return; }
+    history.slice(0,10).forEach(p=>{
+      const d=new Date(p.at);
+      const s=tagEl(`${d.getMonth()+1}/${d.getDate()} ${p.name}`,''); h.append(s);
+    });
+  }
+
+  function renderPool(){
+    const p = pool();
+    $('#poolCount').textContent = `轉盤上有 ${p.length} 個`;
+    drawWheel(p);
+    const ew=$('#emptyWheel');
+    if(!dishes.length){ ew.hidden=false; ew.textContent='先在右邊加入幾個晚餐選項'; }
+    else if(!p.length){ ew.hidden=false; ew.textContent='這個組合沒有選項，換個篩選試試'; }
+    else ew.hidden=true;
+    $('#hub').disabled = spinning || p.length===0;
+  }
+
+  function renderAll(){ renderFilters(); renderList(); renderHistory(); renderPool(); }
+
+  /* ---------- wheel ---------- */
+  let currentPool = [];
+  // Google Fonts serves CJK faces in subsets; canvas only uses glyphs that are already downloaded,
+  // so request the exact characters on the wheel and redraw once they arrive.
+  const askedChars = new Set();
+  function ensureGlyphs(p){
+    if(!document.fonts || !document.fonts.load) return;
+    const missing=[...new Set(p.map(d=>d.name).join(''))].filter(ch=>!askedChars.has(ch));
+    if(!missing.length) return;
+    missing.forEach(ch=>askedChars.add(ch));
+    document.fonts.load('700 40px "LXGW WenKai TC"', missing.join(''))
+      .then(()=>drawWheel(currentPool)).catch(()=>{});
+  }
+  function drawWheel(p){
+    currentPool = p;
+    const c=$('#wheel'), ctx=c.getContext('2d'), W=c.width, R=W/2-10;
+    ctx.clearRect(0,0,W,W);
+    const colors=[tok('--chili'),tok('--yolk'),tok('--leaf'),tok('--plum')];
+    const ink=tok('--ink'), surface=tok('--surface'), line=tok('--line'), onacc=tok('--onaccent');
+    ctx.save(); ctx.translate(W/2,W/2);
+    if(!p.length){
+      ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fillStyle=surface; ctx.fill();
+      ctx.lineWidth=6; ctx.strokeStyle=line; ctx.stroke(); ctx.restore(); return;
+    }
+    ensureGlyphs(p);
+    ctx.rotate(rotation);
+    const n=p.length, a=Math.PI*2/n;
+    for(let i=0;i<n;i++){
+      let col = colors[i%4];
+      if(n%4===1 && i===n-1) col = colors[1];
+      ctx.beginPath();
+      if(n===1){ ctx.arc(0,0,R,0,Math.PI*2); }
+      else { ctx.moveTo(0,0); ctx.arc(0,0,R,i*a-Math.PI/2,(i+1)*a-Math.PI/2); ctx.closePath(); }
+      ctx.fillStyle=col; ctx.fill();
+      if(n>1){ ctx.lineWidth=3; ctx.strokeStyle=surface; ctx.stroke(); }
+      // label
+      ctx.save(); ctx.rotate(i*a + a/2 - Math.PI/2);
+      const yolkSlice = col===colors[1];
+      ctx.fillStyle = yolkSlice ? '#1d2e2b' : onacc;
+      const fs = Math.max(20, Math.min(40, 360/Math.max(n,6)*1.9));
+      ctx.font = `700 ${fs}px ${tok('--display')}`;
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      let label=p[i].name; const maxW=R*0.66;
+      while(ctx.measureText(label).width>maxW && label.length>1) label=label.slice(0,-1);
+      if(label!==p[i].name) label=label.slice(0,-1)+'…';
+      ctx.fillText(label, R-22, 0);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(W/2,W/2,R,0,Math.PI*2); ctx.lineWidth=8; ctx.strokeStyle=ink; ctx.stroke();
+  }
+
+  function spin(){
+    const p = pool(); if(spinning || !p.length) return;
+    spinning=true; $('#hub').disabled=true; pendingDelete=null;
+    const n=p.length, a=Math.PI*2/n, idx=Math.floor(Math.random()*n);
+    // pointer at top (angle 0 in our offset frame). slice idx center at idx*a + a/2.
+    const jitter=(Math.random()-.5)*a*0.6;
+    const targetMod = (Math.PI*2 - (idx*a + a/2 + jitter)) % (Math.PI*2);
+    const curMod = ((rotation % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+    let delta = targetMod - curMod; if(delta<0) delta += Math.PI*2;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const turns = reduce ? 1 : 5 + Math.floor(Math.random()*3);
+    const start=rotation, end=rotation + turns*Math.PI*2 + delta, dur = reduce?600:4200, t0=performance.now();
+    $('#result').innerHTML='<div class="k">轉轉轉…</div>';
+    const ease=t=>1-Math.pow(1-t,4);
+    (function frame(now){
+      const t=Math.min(1,(now-t0)/dur); rotation = start + (end-start)*ease(t);
+      drawWheel(p);
+      if(t<1) requestAnimationFrame(frame);
+      else { spinning=false; lastPick=p[idx]; showResult(p[idx]); renderPool(); }
+    })(t0);
+  }
+
+  function showResult(d){
+    const r=$('#result'); r.replaceChildren();
+    const k=document.createElement('div'); k.className='k'; k.textContent='今晚就吃';
+    const v=document.createElement('div'); v.className='v'; v.textContent=d.name;
+    const m=document.createElement('div'); m.className='meta';
+    if(d.area) m.append(tagEl(d.area,'area')); (d.types||[]).forEach(t=>m.append(tagEl(t,'type')));
+    const act=document.createElement('div'); act.className='actions';
+    const ok=document.createElement('button'); ok.type='button'; ok.className='btn chili'; ok.textContent='就吃這個';
+    ok.disabled=!canWrite;
+    ok.onclick=()=>{ const h=[{id:d.id,name:d.name,at:Date.now()},...history].slice(0,20); backend&&backend.setHistory(h); ok.disabled=true; ok.textContent='記下來了'; };
+    const again=document.createElement('button'); again.type='button'; again.className='btn ghost'; again.textContent='再抽一次';
+    again.onclick=spin;
+    act.append(ok,again);
+    r.append(k,v); if(m.childNodes.length) r.append(m); r.append(act);
+  }
+
+  /* ---------- events ---------- */
+  $('#hub').addEventListener('click', spin);
+  $('#avoidRecent').addEventListener('change', renderPool);
+  $('#search').addEventListener('input', renderList);
+  $('#addForm').addEventListener('submit', async e=>{
+    e.preventDefault(); if(!canWrite || !backend) return;
+    const name=$('#fName').value.trim(); if(!name){ $('#formMsg').textContent='先填要吃什麼'; return; }
+    if(dishes.some(d=>d.name===name)){ $('#formMsg').textContent='名單裡已經有「'+name+'」了'; return; }
+    const d={id:uid(), name, area:$('#fArea').value.trim(), types:splitTypes($('#fTypes').value)};
+    $('#formMsg').textContent='';
+    await backend.add(d);
+    $('#fName').value=''; $('#fArea').value=''; $('#fTypes').value=''; $('#fName').focus();
+  });
+  let clearArmed=false;
+  $('#clearExamples').addEventListener('click', async ()=>{
+    const b=$('#clearExamples');
+    if(!clearArmed){ clearArmed=true; b.textContent='確定清除範例？再按一次'; setTimeout(()=>{clearArmed=false; b.textContent='清除所有範例';},4000); return; }
+    clearArmed=false; b.textContent='清除所有範例';
+    for(const d of dishes.filter(x=>x.example)){ await backend.remove(d.id); }
+  });
+  const mq = matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener?.('change', ()=>drawWheel(currentPool));
+  new MutationObserver(()=>drawWheel(currentPool)).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  document.fonts?.ready?.then(()=>drawWheel(currentPool));
+
+  init();
+})();
+</script>
+
+</body>
+</html>
